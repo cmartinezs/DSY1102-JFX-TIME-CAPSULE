@@ -10,6 +10,22 @@
     <Label text="Cápsula del Tiempo"
            style="-fx-font-size: 24px; -fx-font-weight: bold;"/>
     <Label text="Mensajes para nuestro yo del futuro"/>
+
+    <HBox spacing="10" alignment="CENTER_LEFT">
+        <TextField fx:id="campoAutor"
+                   promptText="Tu nombre"
+                   prefWidth="140"/>
+        <TextField fx:id="campoTexto"
+                   promptText="Mensaje para el futuro"
+                   HBox.hgrow="ALWAYS"/>
+        <ComboBox fx:id="campoPlazo"
+                  prefWidth="130"/>
+        <Button text="Guardar mensaje"
+                onAction="#agregarMensaje"/>
+    </HBox>
+
+    <Label fx:id="estadoRegistro" text=""/>
+
     <TableView fx:id="tablaMensajes"
                VBox.vgrow="ALWAYS">
         <columns>
