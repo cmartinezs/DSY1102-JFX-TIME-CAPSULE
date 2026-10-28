@@ -1,4 +1,3 @@
-
 package cl.duoc.dsy1102.timecapsule.model;
 
 public class MensajeFuturo {

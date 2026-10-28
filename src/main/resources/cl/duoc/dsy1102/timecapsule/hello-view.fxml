@@ -7,37 +7,32 @@
       fx:controller="cl.duoc.dsy1102.timecapsule.HelloController"
       spacing="14"
       style="-fx-padding: 20;">
+
     <Label text="Cápsula del Tiempo"
            style="-fx-font-size: 24px; -fx-font-weight: bold;"/>
+
     <Label text="Mensajes para nuestro yo del futuro"/>
 
-    <HBox spacing="10" alignment="CENTER_LEFT">
-        <TextField fx:id="campoAutor"
-                   promptText="Tu nombre"
-                   prefWidth="140"/>
-        <TextField fx:id="campoTexto"
-                   promptText="Mensaje para el futuro"
-                   HBox.hgrow="ALWAYS"/>
-        <ComboBox fx:id="campoPlazo"
-                  prefWidth="130"/>
-        <Button text="Guardar mensaje"
-                onAction="#agregarMensaje"/>
-    </HBox>
-
-    <Label fx:id="estadoRegistro" text=""/>
+    <Button text="+ Escribir nuevo mensaje"
+            onAction="#abrirFormulario"/>
 
     <TableView fx:id="tablaMensajes"
                VBox.vgrow="ALWAYS">
+
         <columns>
             <TableColumn fx:id="colAutor"
                          text="Autor"
                          prefWidth="170"/>
+
             <TableColumn fx:id="colTexto"
                          text="Mensaje"
                          prefWidth="420"/>
+
             <TableColumn fx:id="colPlazo"
                          text="Leer dentro de"
                          prefWidth="160"/>
         </columns>
+
     </TableView>
+
 </VBox>
