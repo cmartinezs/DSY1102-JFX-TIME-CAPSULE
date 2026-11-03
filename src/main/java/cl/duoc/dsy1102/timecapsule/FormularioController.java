@@ -35,8 +35,9 @@ public class FormularioController {
             );
             app.mostrarListado();
         } catch (IllegalArgumentException error) {
-            // El Service valida; el Controller sólo informa el resultado.
             estadoRegistro.setText(error.getMessage());
+        } catch (IOException error) {
+            estadoRegistro.setText("No se pudo guardar el archivo JSON: " + error.getMessage());
         }
     }
 
