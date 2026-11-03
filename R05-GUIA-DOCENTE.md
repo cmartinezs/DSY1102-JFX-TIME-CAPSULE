@@ -10,7 +10,7 @@
 4. Reemplazar `HelloApplication.java`: conservar carga de FXML, navegación y `Stage`; sustituir la lista JavaFX compartida por un `MensajeService` único. Cargar allí los dos mensajes de ejemplo al iniciar.
 5. Reemplazar `HelloController.java`: conectar la tabla a `FXCollections.observableArrayList(app.getMensajeService().listar())`. Como el listado se vuelve a cargar al regresar desde el formulario, refleja los cambios. No incorporar JavaFX al servicio.
 6. Reemplazar `FormularioController.java`: quitar la creación de `MensajeFuturo`, la validación y el `add`. Invocar `registrar` y mostrar `IllegalArgumentException` junto al formulario. El evento de navegación mantiene su comportamiento.
-7. **No cambiar** `MensajeFuturo.java`, `hello-view.fxml`, `formulario-view.fxml` ni `pom.xml`.
+7. **No cambiar** `MensajeFuturo.java`, `hello-view.fxml`, `formulario-view.fxml` y actualizar únicamente `pom.xml` para fijar `maven-surefire-plugin` 3.2.5, asegurando ejecución JUnit 5 desde `mvn test`.
 8. Ejecutar `mvn test` (o desde Maven de IntelliJ) y después `mvn javafx:run`. Si hay un problema con `mvn` en Windows, usar el Maven Tool Window.
 9. En el formulario, intentar autor vacío: debe mostrar el error y mantener la vista. Registrar `Ana`, `Hola dentro de cinco años`, `5`: volver al listado y ver tres filas. Cerrar y abrir: deben volver solo las dos filas iniciales, porque R05 **no persiste**.
 
