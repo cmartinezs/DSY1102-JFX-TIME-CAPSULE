@@ -18,21 +18,17 @@
 
     <TableView fx:id="tablaMensajes"
                VBox.vgrow="ALWAYS">
-
         <columns>
             <TableColumn fx:id="colAutor"
                          text="Autor"
                          prefWidth="170"/>
-
             <TableColumn fx:id="colTexto"
                          text="Mensaje"
                          prefWidth="420"/>
-
             <TableColumn fx:id="colPlazo"
                          text="Leer dentro de"
                          prefWidth="160"/>
         </columns>
-
     </TableView>
 
 </VBox>
