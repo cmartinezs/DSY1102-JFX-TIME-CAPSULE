@@ -2,6 +2,7 @@ package cl.duoc.dsy1102.timecapsule;
 
 import cl.duoc.dsy1102.timecapsule.model.MensajeFuturo;
 import javafx.beans.property.ReadOnlyStringWrapper;
+import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
@@ -20,11 +21,9 @@ public class HelloController {
         colAutor.setCellValueFactory(celda ->
                 new ReadOnlyStringWrapper(celda.getValue().getAutor())
         );
-
         colTexto.setCellValueFactory(celda ->
                 new ReadOnlyStringWrapper(celda.getValue().getTexto())
         );
-
         colPlazo.setCellValueFactory(celda ->
                 new ReadOnlyStringWrapper(celda.getValue().getPlazoAnios() + " años")
         );
@@ -32,8 +31,10 @@ public class HelloController {
 
     public void configurar(HelloApplication app) {
         this.app = app;
-        // La misma lista que conserva HelloApplication
-        tablaMensajes.setItems(app.getMensajes());
+        // Adaptación para la presentación: Service no depende de JavaFX.
+        tablaMensajes.setItems(
+                FXCollections.observableArrayList(app.getMensajeService().listar())
+        );
     }
 
     @FXML
