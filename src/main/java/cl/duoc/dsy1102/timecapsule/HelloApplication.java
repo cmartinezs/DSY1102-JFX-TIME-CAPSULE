@@ -3,6 +3,7 @@ package cl.duoc.dsy1102.timecapsule;
 import cl.duoc.dsy1102.timecapsule.dao.JsonMensajeDao;
 import cl.duoc.dsy1102.timecapsule.service.MensajeService;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -38,7 +39,8 @@ public class HelloApplication extends Application {
             alerta.setHeaderText("Error al recuperar los mensajes");
             alerta.setContentText(error.getMessage());
             alerta.showAndWait();
-            // No arrancar con lista vacía ni sobrescribir un JSON corrupto.
+            // Sin datos válidos no abrimos una pantalla vacía ni reemplazamos el archivo.
+            Platform.exit();
         }
     }
 
