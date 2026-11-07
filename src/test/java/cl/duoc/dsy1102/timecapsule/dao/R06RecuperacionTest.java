@@ -89,4 +89,31 @@ class R06RecuperacionTest {
         assertThrows(IOException.class, () -> new JsonMensajeDao(archivo).listar());
         assertTrue(Files.exists(archivo));
     }
+
+    @Test
+    void faltaComaEntreObjetosDetectaCorrupcionSinBorrarOriginal() throws Exception {
+        Path archivo = carpetaTemporal.resolve("mensajes.json");
+        // Mismo tipo de error que se puede producir al editar el JSON a mano:
+        // dos objetos consecutivos sin coma separadora.
+        String contenido = """
+                [
+                  {"autor":"Carlos","texto":"Primero","plazoAnios":5}
+                  {"autor":"Carlos","texto":"Segundo","plazoAnios":5}
+                ]
+                """;
+        Files.writeString(archivo, contenido);
+
+        IOException error = assertThrows(IOException.class,
+                () -> new JsonMensajeDao(archivo).listar());
+
+        assertTrue(error.getMessage().contains("está dañado"));
+        assertEquals(contenido, Files.readString(archivo));
+
+        try (Stream<Path> entradas = Files.list(carpetaTemporal)) {
+            assertEquals(1, entradas.filter(p ->
+                    p.getFileName().toString().startsWith("mensajes.json.corrupt-")
+            ).count());
+        }
+    }
+
 }
