@@ -10,6 +10,7 @@ import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Arrays;
 import java.util.List;
 
 public class JsonMensajeDao implements MensajeDao {
@@ -20,21 +21,41 @@ public class JsonMensajeDao implements MensajeDao {
     private final Path archivo;
     private final ObjectMapper mapper = new ObjectMapper();
 
+    // R06: referencia de la última versión válida que el DAO cargó o guardó.
+    private byte[] versionConocida;
+    private boolean versionRegistrada;
+
     public JsonMensajeDao(Path archivo) {
         this.archivo = archivo;
     }
 
     @Override
     public List<MensajeFuturo> listar() throws IOException {
-        if (Files.notExists(archivo)) {
+        byte[] contenido = leerContenidoActual();
+        if (contenido == null) {
+            versionConocida = null;
+            versionRegistrada = true;
             return List.of();
         }
 
+        List<MensajeFuturo> recuperados = leerYValidar(contenido);
+        versionConocida = contenido;
+        versionRegistrada = true;
+        return recuperados;
+    }
+
+    private byte[] leerContenidoActual() throws IOException {
+        if (Files.notExists(archivo)) {
+            return null;
+        }
+        return Files.readAllBytes(archivo);
+    }
+
+    private List<MensajeFuturo> leerYValidar(byte[] contenido) throws IOException {
         try {
             List<MensajeFuturo> recuperados = mapper.readValue(
-                    archivo.toFile(), TIPO_MENSAJES
+                    contenido, TIPO_MENSAJES
             );
-
             if (recuperados == null || recuperados.stream().anyMatch(this::esInvalido)) {
                 throw preservarArchivoDanado(new IOException("Estructura JSON inválida."));
             }
@@ -90,13 +111,39 @@ public class JsonMensajeDao implements MensajeDao {
         Path directorio = destino.getParent();
         Files.createDirectories(directorio);
 
+        // Nunca sobrescribir ni respaldar como «bueno» un JSON que está dañado.
+        byte[] contenidoActual = leerContenidoActual();
+        if (contenidoActual != null) {
+            leerYValidar(contenidoActual);
+        }
+
+        // También protegemos cambios externos válidos: el Service puede tener
+        // una versión anterior en memoria. Debe reiniciarse para recuperar la nueva.
+        if (versionRegistrada && !Arrays.equals(versionConocida, contenidoActual)) {
+            throw new IOException("El archivo JSON cambió mientras la aplicación estaba "
+                    + "abierta. No se guardó el mensaje para evitar perder datos. "
+                    + "Cierra y vuelve a abrir la cápsula.");
+        }
+
+        // También permite usar el DAO directamente sin llamar antes a listar().
+        if (!versionRegistrada) {
+            versionConocida = contenidoActual;
+            versionRegistrada = true;
+        }
+
         // El temporal está en la misma carpeta para permitir movimiento atómico.
         Path temporal = Files.createTempFile(directorio, "mensajes-", ".tmp");
         try {
             mapper.writerWithDefaultPrettyPrinter().writeValue(temporal.toFile(), mensajes);
 
-            // Antes de sustituir el JSON, conservar la versión anterior.
-            if (Files.exists(destino)) {
+            // Segunda comprobación por si el archivo cambió durante la escritura.
+            if (!Arrays.equals(versionConocida, leerContenidoActual())) {
+                throw new IOException("El archivo JSON fue modificado mientras se "
+                        + "preparaba el guardado. Operación cancelada.");
+            }
+
+            // El respaldo solo se actualiza si el JSON vigente es válido y conocido.
+            if (contenidoActual != null) {
                 Path respaldo = destino.resolveSibling(destino.getFileName() + ".bak");
                 Files.copy(destino, respaldo, StandardCopyOption.REPLACE_EXISTING);
             }
@@ -109,6 +156,9 @@ public class JsonMensajeDao implements MensajeDao {
                 // La alternativa no es atómica; el archivo .bak protege la versión anterior.
                 Files.move(temporal, destino, StandardCopyOption.REPLACE_EXISTING);
             }
+
+            // Esta es ahora la versión que conocemos: futuros guardados la comprobarán.
+            versionConocida = Files.readAllBytes(destino);
         } finally {
             Files.deleteIfExists(temporal);
         }
