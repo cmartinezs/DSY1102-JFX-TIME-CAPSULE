@@ -20,6 +20,24 @@ Con capturas reales se observan: dos registros persistidos, interfaz recuperada,
 
 **Diagnóstico no destructivo de la prueba pendiente:** modificar `mensajes.json` mientras JavaFX sigue abierto no ejecuta `listar()`: la lectura sucede al construir el servicio durante el **arranque de un proceso nuevo**. Termina la aplicación, verifica la ruta real de `Path.of("data","mensajes.json").toAbsolutePath()`, altera exclusivamente ese archivo luego de respaldarlo y arranca otra vez. Si no hay alerta, ejecutar el test de corrupción individual y aportar el error exacto; no asumir éxito.
 
+### Diagnóstico actualizado de ruta efectiva (7 noviembre de 2026)
+
+Si luego de un `git pull` el comportamiento visual no cambia, primero comprueba **de qué repositorio y rama** vinieron los cambios. Las slides HTML viven en el repositorio docente `DSY1102-DESARROLLO-ORIENTADO-OBJETOS-2026-2`, mientras la aplicación JavaFX vive en `DSY1102-JFX-TIME-CAPSULE`.
+
+R06 incluye ahora un diagnóstico **en la aplicación**: `HelloApplication.start()` imprime en la consola el directorio de trabajo, la ruta absoluta de `data/mensajes.json` y si el archivo existe al iniciar. Cuando la carga falla, el diálogo incluye esa ruta y la consola registra la excepción. La lectura sigue ocurriendo solamente al iniciar, **no** al editar archivos mientras la aplicación está abierta.
+
+```bash
+git branch --show-current
+git pull --ff-only origin feat/dsy1102-r06-json-recovery
+git log -1 --oneline
+bash ./mvnw clean test
+bash ./mvnw javafx:run
+```
+
+Para probar el error, detener la ejecución, **respaldar el JSON correcto**, editar la ruta exacta impresa bajo `[R06] Archivo JSON efectivo:` con `{json roto`, y **arrancar un proceso nuevo** con `bash ./mvnw javafx:run`. Debe aparecer la alerta con la ruta y el diagnóstico. Si no aparece, capturar la consola `[R06]` para identificar un directorio diferente, archivo ausente o un proceso que no se reinició.
+
+No alterar el archivo durante una ejecución y dar por comprobado el error: la aplicación aún no implementa vigilancia de archivos y no pretende hacerlo.
+
 ## 1. Nueva necesidad antes de mostrar código
 
 Situación de R05: la tabla muestra dos mensajes y `data/mensajes.json` contiene esos dos objetos.
