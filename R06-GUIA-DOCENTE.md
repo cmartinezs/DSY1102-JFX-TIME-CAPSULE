@@ -7,6 +7,18 @@
 **Estado:** implementación en revisión; el docente aporta capturas reales antes de crear las slides.
 
 
+## Prueba discriminante: JSON roto frente a respaldo válido
+
+La implementación **no intenta cargar `mensajes.json.bak` automáticamente**. El DAO solo lee el `Path` recibido desde `HelloApplication` y `ObjectMapper.readValue(...)` debe lanzar un error para `{json roto`. Si el archivo contiene `[]`, devuelve una lista vacía, pero tampoco intenta recuperar el respaldo.
+
+Se añadieron dos pruebas JUnit que fijan ambas expectativas:
+- `jsonCorruptoConBakValidoNoCargaRespaldoAutomaticamente`.
+- `jsonConListaVaciaDevuelveListaVaciaAunqueHayaRespaldo`.
+
+La aplicación imprime ahora en la salida de ejecución `[R06][DAO] Archivo leído:`, `[R06][DAO] JSON válido; mensajes recuperados:` o `[R06][DAO] Jackson rechazó el archivo:`. Son datos suficientes para identificar qué archivo abrió realmente el proceso.
+
+Ejecutar con `bash ./mvnw -Dtest=R06RecuperacionTest test`, luego `bash ./mvnw javafx:run`. Para el caso manual, respaldar el JSON, detener JavaFX, modificar **la ruta impresa por el DAO** con `{json roto`, iniciar de nuevo y observar el error. No marcarlo aprobado sin salida real.
+
 ## Corrección R06 · guardado con JSON modificado mientras la app sigue abierta
 
 **Problema reproducido por el docente:** se estropea `mensajes.json` y la ventana continúa mostrando los mensajes anteriores; tras registrar otro, el JSON vuelve a aparecer válido. **Causa identificada en el código anterior:** el servicio mantenía los registros en memoria, y `JsonMensajeDao.guardar()` reescribía el archivo sin comprobar su contenido actual. No existe lectura automática del archivo `.bak`: observar las filas anteriores no prueba que se haya cargado el respaldo.
