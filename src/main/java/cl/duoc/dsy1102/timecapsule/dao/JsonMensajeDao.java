@@ -135,6 +135,7 @@ public class JsonMensajeDao implements MensajeDao {
         Path temporal = Files.createTempFile(directorio, "mensajes-", ".tmp");
         try {
             mapper.writerWithDefaultPrettyPrinter().writeValue(temporal.toFile(), mensajes);
+            byte[] nuevaVersion = Files.readAllBytes(temporal);
 
             // Segunda comprobación por si el archivo cambió durante la escritura.
             if (!Arrays.equals(versionConocida, leerContenidoActual())) {
@@ -158,7 +159,7 @@ public class JsonMensajeDao implements MensajeDao {
             }
 
             // Esta es ahora la versión que conocemos: futuros guardados la comprobarán.
-            versionConocida = Files.readAllBytes(destino);
+            versionConocida = nuevaVersion;
         } finally {
             Files.deleteIfExists(temporal);
         }
