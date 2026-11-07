@@ -31,14 +31,20 @@ public class JsonMensajeDao implements MensajeDao {
 
     @Override
     public List<MensajeFuturo> listar() throws IOException {
+        // Diagnóstico docente: identifica el archivo que realmente lee Jackson.
+        System.out.println("[R06][DAO] Archivo leído: "
+                + archivo.toAbsolutePath().normalize());
         byte[] contenido = leerContenidoActual();
         if (contenido == null) {
+            System.out.println("[R06][DAO] Archivo ausente; primera ejecución sin datos.");
             versionConocida = null;
             versionRegistrada = true;
             return List.of();
         }
 
         List<MensajeFuturo> recuperados = leerYValidar(contenido);
+        System.out.println("[R06][DAO] JSON válido; mensajes recuperados: "
+                + recuperados.size());
         versionConocida = contenido;
         versionRegistrada = true;
         return recuperados;
@@ -61,6 +67,8 @@ public class JsonMensajeDao implements MensajeDao {
             }
             return recuperados;
         } catch (JsonProcessingException error) {
+            System.err.println("[R06][DAO] Jackson rechazó el archivo: "
+                    + archivo.toAbsolutePath().normalize());
             throw preservarArchivoDanado(error);
         }
     }
