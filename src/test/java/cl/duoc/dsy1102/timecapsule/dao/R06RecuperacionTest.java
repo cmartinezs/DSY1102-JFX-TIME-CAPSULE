@@ -116,4 +116,49 @@ class R06RecuperacionTest {
         }
     }
 
+    @Test
+    void guardarMientrasJavaFxSigueAbiertoNoReparaJsonCorrupto() throws Exception {
+        Path archivo = carpetaTemporal.resolve("mensajes.json");
+        MensajeService service = new MensajeService(new JsonMensajeDao(archivo));
+        service.registrar("Carlos", "Primero", 5);
+        service.registrar("Carlos", "Segundo", 5);
+
+        Path backup = carpetaTemporal.resolve("mensajes.json.bak");
+        String backupAnterior = Files.readString(backup);
+
+        // Simula que el JSON se edita cuando el Service ya tiene datos en memoria.
+        Files.writeString(archivo, "{json roto");
+
+        IOException error = assertThrows(IOException.class,
+                () -> service.registrar("Carlos", "Tercero", 5));
+
+        assertTrue(error.getMessage().contains("está dañado"));
+        assertEquals("{json roto", Files.readString(archivo));
+        assertEquals(backupAnterior, Files.readString(backup));
+        assertEquals(2, service.listar().size(), "No agrega el tercero en memoria");
+
+        try (Stream<Path> entradas = Files.list(carpetaTemporal)) {
+            assertEquals(1, entradas.filter(p ->
+                    p.getFileName().toString().startsWith("mensajes.json.corrupt-")
+            ).count(), "Debe conservar una copia del JSON dañado");
+        }
+    }
+
+    @Test
+    void guardarNoSobrescribeCambioExternoAunqueJsonSeaValido() throws Exception {
+        Path archivo = carpetaTemporal.resolve("mensajes.json");
+        MensajeService service = new MensajeService(new JsonMensajeDao(archivo));
+        service.registrar("Carlos", "Original", 5);
+
+        // Otro editor cambia el archivo a JSON sintácticamente válido.
+        Files.writeString(archivo, "[]");
+
+        IOException error = assertThrows(IOException.class,
+                () -> service.registrar("Carlos", "No debe guardarse", 5));
+
+        assertTrue(error.getMessage().contains("cambió mientras"));
+        assertEquals("[]", Files.readString(archivo));
+        assertEquals(1, service.listar().size());
+    }
+
 }
