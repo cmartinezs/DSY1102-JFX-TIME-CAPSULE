@@ -2,8 +2,10 @@ package cl.duoc.dsy1102.timecapsule.dao;
 
 import cl.duoc.dsy1102.timecapsule.model.MensajeFuturo;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.StreamReadFeature;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
 import java.nio.file.AtomicMoveNotSupportedException;
@@ -19,7 +21,11 @@ public class JsonMensajeDao implements MensajeDao {
             new TypeReference<>() {};
 
     private final Path archivo;
-    private final ObjectMapper mapper = new ObjectMapper();
+    // R06: Jackson rechaza claves repetidas dentro del MISMO objeto JSON.
+    // Una propiedad repetida ya no reemplaza silenciosamente el valor anterior.
+    private final ObjectMapper mapper = JsonMapper.builder()
+            .enable(StreamReadFeature.STRICT_DUPLICATE_DETECTION)
+            .build();
 
     // R06: referencia de la última versión válida que el DAO cargó o guardó.
     private byte[] versionConocida;
