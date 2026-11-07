@@ -202,4 +202,85 @@ class R06RecuperacionTest {
         assertEquals(1, new JsonMensajeDao(respaldo).listar().size());
     }
 
+
+    @Test
+    void propiedadesDuplicadasEnMismoObjetoSonRechazadas() throws Exception {
+        Path archivo = carpetaTemporal.resolve("mensajes.json");
+
+        // Caso real del debugger: Jackson no debe aceptar el segundo "texto"
+        // ni quedarse silenciosamente con "3er registro".
+        String contenido = """
+                [
+                  {
+                    "autor": "Carlos",
+                    "texto": "Otro Mensaje",
+                    "plazoAnios": 5,
+                    "texto": "3er registro"
+                  }
+                ]
+                """;
+        Files.writeString(archivo, contenido);
+
+        IOException error = assertThrows(IOException.class,
+                () -> new JsonMensajeDao(archivo).listar());
+
+        assertTrue(error.getMessage().contains("está dañado"));
+        assertEquals(contenido, Files.readString(archivo),
+                "El original debe conservarse sin modificaciones");
+
+        try (Stream<Path> archivos = Files.list(carpetaTemporal)) {
+            List<Path> copias = archivos
+                    .filter(p -> p.getFileName().toString()
+                            .startsWith("mensajes.json.corrupt-"))
+                    .toList();
+            assertEquals(1, copias.size());
+            assertEquals(contenido, Files.readString(copias.get(0)),
+                    "La copia debe conservar exactamente el JSON con duplicados");
+        }
+    }
+
+    @Test
+    void propiedadesIgualesEnObjetosDiferentesSonValidas() throws Exception {
+        Path archivo = carpetaTemporal.resolve("mensajes.json");
+        Files.writeString(archivo, """
+                [
+                  {"autor":"Carlos","texto":"Primero","plazoAnios":5},
+                  {"autor":"Carlos","texto":"Segundo","plazoAnios":5}
+                ]
+                """);
+
+        List<MensajeFuturo> mensajes = new JsonMensajeDao(archivo).listar();
+
+        assertEquals(2, mensajes.size(),
+                "El control de duplicados es por objeto, no por archivo");
+        assertEquals("Primero", mensajes.get(0).getTexto());
+        assertEquals("Segundo", mensajes.get(1).getTexto());
+    }
+
+    @Test
+    void duplicadosDuranteLaEjecucionBloqueanGuardadoYProtegenBak() throws Exception {
+        Path archivo = carpetaTemporal.resolve("mensajes.json");
+        MensajeService servicio = new MensajeService(new JsonMensajeDao(archivo));
+        servicio.registrar("Carlos", "Primero", 5);
+        servicio.registrar("Carlos", "Segundo", 5);
+
+        Path respaldo = carpetaTemporal.resolve("mensajes.json.bak");
+        String respaldoAntes = Files.readString(respaldo);
+        String duplicado = """
+                [
+                  {"autor":"Carlos","texto":"Primero","plazoAnios":5,
+                   "texto":"Tercero"}
+                ]
+                """;
+        Files.writeString(archivo, duplicado);
+
+        assertThrows(IOException.class,
+                () -> servicio.registrar("Carlos", "No debe registrarse", 5));
+
+        assertEquals(2, servicio.listar().size());
+        assertEquals(duplicado, Files.readString(archivo));
+        assertEquals(respaldoAntes, Files.readString(respaldo),
+                "El respaldo anterior no debe sobrescribirse con JSON inválido");
+    }
+
 }
