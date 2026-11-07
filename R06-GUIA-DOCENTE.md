@@ -6,6 +6,20 @@
 **Rama:** `feat/dsy1102-r06-json-recovery` (sale de `feat/dsy1102-r05-service`).
 **Estado:** implementación en revisión; el docente aporta capturas reales antes de crear las slides.
 
+
+## Guías complementarias para contenidos que todavía se están introduciendo
+
+La implementación R06 **mantiene** `recuperados.stream().anyMatch(this::esInvalido)`. No es necesario eliminar Streams ni reescribir la solución usando `for`: ambos enfoques se explican en material de apoyo fuera del flujo principal de la presentación.
+
+- **[Streams, lambdas y referencias a métodos · cápsula DSY1102](https://github.com/cmartinezs/DSY1102-DESARROLLO-ORIENTADO-OBJETOS-2026-2/blob/master/clases/unidad-02/capsula-tiempo-fx/docs/GUIA-STREAMS-LAMBDAS-R06.md)**: compara `for` con `anyMatch`, explica `Predicate`, cortocircuito y `this::esInvalido`.
+- **[NIO.2: Path, Files, File y manejo de archivos · cápsula DSY1102](https://github.com/cmartinezs/DSY1102-DESARROLLO-ORIENTADO-OBJETOS-2026-2/blob/master/clases/unidad-02/capsula-tiempo-fx/docs/GUIA-NIO2-PATH-FILES-R06.md)**: ruta relativa/absoluta, `Files`, temporal, respaldo, opciones de copia y errores.
+
+### Evidencia recibida y pendiente
+
+Con capturas reales se observan: dos registros persistidos, interfaz recuperada, lectura y escritura del DAO, tercer registro, JSON actual con tres elementos y archivo `.bak` con dos. **No se ha observado** la alerta por JSON dañado ni la creación de la copia `.corrupt-*.json`; esos criterios permanecen pendientes.
+
+**Diagnóstico no destructivo de la prueba pendiente:** modificar `mensajes.json` mientras JavaFX sigue abierto no ejecuta `listar()`: la lectura sucede al construir el servicio durante el **arranque de un proceso nuevo**. Termina la aplicación, verifica la ruta real de `Path.of("data","mensajes.json").toAbsolutePath()`, altera exclusivamente ese archivo luego de respaldarlo y arranca otra vez. Si no hay alerta, ejecutar el test de corrupción individual y aportar el error exacto; no asumir éxito.
+
 ## 1. Nueva necesidad antes de mostrar código
 
 Situación de R05: la tabla muestra dos mensajes y `data/mensajes.json` contiene esos dos objetos.
