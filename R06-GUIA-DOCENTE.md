@@ -7,6 +7,30 @@
 **Estado:** implementación en revisión; el docente aporta capturas reales antes de crear las slides.
 
 
+## Caso de estudio: propiedades duplicadas en un mismo objeto JSON
+
+**Hallazgo en depuración:** el archivo podía incluir `"texto"` dos veces **dentro del mismo objeto**. JSON con nombres repetidos no asegura interoperabilidad; Jackson, sin detección estricta, aceptaba la entrada y el último valor reemplazaba al primero en el modelo Java. Esto no es lo mismo que repetir `"texto"` en dos objetos diferentes de la misma lista, que sí es normal.
+
+**Corrección de producción:** se conserva `ObjectMapper`, construido mediante `JsonMapper.builder()` y configurado con `StreamReadFeature.STRICT_DUPLICATE_DETECTION`. Jackson lanza `JsonParseException` cuando encuentra un campo repetido; nuestro método `leerYValidar()` ya captura esa excepción, conserva una copia `.corrupt-*.json` y propaga `IOException`. La aplicación no abre una tabla con valores sobrescritos.
+
+```java
+import com.fasterxml.jackson.core.StreamReadFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
+
+private final ObjectMapper mapper = JsonMapper.builder()
+        .enable(StreamReadFeature.STRICT_DUPLICATE_DETECTION)
+        .build();
+```
+
+**Tests JUnit agregados:** `propiedadesDuplicadasEnMismoObjetoSonRechazadas`, `propiedadesIgualesEnObjetosDiferentesSonValidas` y `duplicadosDuranteLaEjecucionBloqueanGuardadoYProtegenBak`.
+
+**Demostración propuesta:** respaldar el archivo; repetir una propiedad, por ejemplo `"texto"` dos veces dentro del segundo objeto; reiniciar JavaFX y observar que el parser ahora rechaza el JSON, conservando original y copia diagnóstica. Si la aplicación permanece abierta, intentar registrar otro mensaje debe mostrar la alerta y preservar también `.bak`. No confundir esto con recuperar automáticamente el respaldo: no existe tal comportamiento.
+
+Referencias: [Javadoc Java 21 de Jackson-core StreamReadFeature (Jackson 2.x)](https://javadoc.io/static/com.fasterxml.jackson.core/jackson-core/2.22.3/com/fasterxml/jackson/core/StreamReadFeature.html) y [guía de NIO.2, Path y Files](https://github.com/cmartinezs/DSY1102-DESARROLLO-ORIENTADO-OBJETOS-2026-2/blob/master/clases/unidad-02/capsula-tiempo-fx/docs/GUIA-NIO2-PATH-FILES-R06.md).
+
+**Estado:** código y pruebas versionados; pendiente confirmar ejecución de Maven y capturas de la alerta con esta nueva configuración.
+
 ## Prueba discriminante: JSON roto frente a respaldo válido
 
 La implementación **no intenta cargar `mensajes.json.bak` automáticamente**. El DAO solo lee el `Path` recibido desde `HelloApplication` y `ObjectMapper.readValue(...)` debe lanzar un error para `{json roto`. Si el archivo contiene `[]`, devuelve una lista vacía, pero tampoco intenta recuperar el respaldo.
