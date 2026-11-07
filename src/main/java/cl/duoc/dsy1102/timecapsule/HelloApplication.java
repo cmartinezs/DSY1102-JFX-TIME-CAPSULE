@@ -11,6 +11,7 @@ import javafx.scene.control.Alert;
 import javafx.stage.Stage;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 public class HelloApplication extends Application {
@@ -27,9 +28,17 @@ public class HelloApplication extends Application {
         this.stage = stage;
         stage.setTitle("Cápsula del Tiempo FX");
 
+        // R06: mostrar la ruta exacta evita modificar un JSON que el proceso no está leyendo.
+        Path archivoMensajes = Path.of("data", "mensajes.json")
+                .toAbsolutePath().normalize();
+        System.out.println("[R06] Directorio de trabajo: "
+                + Path.of("").toAbsolutePath().normalize());
+        System.out.println("[R06] Archivo JSON efectivo: " + archivoMensajes);
+        System.out.println("[R06] Existe al iniciar: " + Files.exists(archivoMensajes));
+
         try {
             mensajeService = new MensajeService(
-                    new JsonMensajeDao(Path.of("data", "mensajes.json"))
+                    new JsonMensajeDao(archivoMensajes)
             );
             mostrarListado();
             stage.show();
@@ -37,7 +46,10 @@ public class HelloApplication extends Application {
             Alert alerta = new Alert(Alert.AlertType.ERROR);
             alerta.setTitle("No fue posible abrir la cápsula");
             alerta.setHeaderText("Error al recuperar los mensajes");
-            alerta.setContentText(error.getMessage());
+            alerta.setContentText("Archivo: " + archivoMensajes
+                    + "\n\n" + error.getMessage());
+            System.err.println("[R06] Error al cargar " + archivoMensajes);
+            error.printStackTrace(System.err);
             alerta.showAndWait();
             // Sin datos válidos no abrimos una pantalla vacía ni reemplazamos el archivo.
             Platform.exit();
