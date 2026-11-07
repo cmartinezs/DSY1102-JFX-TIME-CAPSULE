@@ -7,6 +7,29 @@
 **Estado:** implementación en revisión; el docente aporta capturas reales antes de crear las slides.
 
 
+## Corrección R06 · guardado con JSON modificado mientras la app sigue abierta
+
+**Problema reproducido por el docente:** se estropea `mensajes.json` y la ventana continúa mostrando los mensajes anteriores; tras registrar otro, el JSON vuelve a aparecer válido. **Causa identificada en el código anterior:** el servicio mantenía los registros en memoria, y `JsonMensajeDao.guardar()` reescribía el archivo sin comprobar su contenido actual. No existe lectura automática del archivo `.bak`: observar las filas anteriores no prueba que se haya cargado el respaldo.
+
+**Corrección aplicada a `JsonMensajeDao`:**
+
+1. `listar()` conserva una instantánea de bytes de la última versión cargada correctamente.
+2. `guardar()` vuelve a leer y validar el JSON actual antes de preparar el temporal. Si es inválido, preserva una copia `.corrupt-*.json` y **no guarda**.
+3. Si el archivo cambió externamente, aunque el contenido nuevo sea JSON válido, el guardado se cancela para evitar sobrescribir datos que el servicio todavía no tiene en memoria.
+4. Si todo está correcto, prepara el temporal, comprueba otra vez si hubo cambios, conserva `.bak` y reemplaza el JSON. Actualiza su instantánea solo tras completar el movimiento.
+5. El formulario conserva la entrada y muestra una **alerta de error de persistencia**; el usuario no es enviado a la tabla como si se hubiera guardado.
+
+**Nueva evidencia que debe capturarse antes de cerrar R06:** mantener la ventana abierta con registros válidos, modificar y guardar `data/mensajes.json` con `{json roto`, volver al formulario y pulsar Guardar; debe aparecer la alerta, permanecer corrupto el JSON y conservarse el `.bak` anterior. Además, detener JavaFX y arrancar de nuevo con el JSON corrupto para comprobar el bloqueo de carga y la copia de resguardo. Restaurar después desde una **copia válida**.
+
+```bash
+git switch feat/dsy1102-r06-json-recovery
+git pull --ff-only origin feat/dsy1102-r06-json-recovery
+bash ./mvnw -Dtest=R06RecuperacionTest test
+bash ./mvnw javafx:run
+```
+
+**Nota de seguridad:** la comparación es una defensa didáctica contra cambios externos detectables, no una transacción multiusuario ni un bloqueo de archivos. Persisten pequeñas ventanas de carrera entre la comprobación y el movimiento; el objetivo R06 no incluye concurrencia.
+
 ## Guías complementarias para contenidos que todavía se están introduciendo
 
 La implementación R06 **mantiene** `recuperados.stream().anyMatch(this::esInvalido)`. No es necesario eliminar Streams ni reescribir la solución usando `for`: ambos enfoques se explican en material de apoyo fuera del flujo principal de la presentación.
