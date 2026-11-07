@@ -207,15 +207,22 @@ class R06RecuperacionTest {
     void propiedadesDuplicadasEnMismoObjetoSonRechazadas() throws Exception {
         Path archivo = carpetaTemporal.resolve("mensajes.json");
 
-        // Caso real del debugger: Jackson no debe aceptar el segundo "texto"
-        // ni quedarse silenciosamente con "3er registro".
+        // Reproduce el debugger: el segundo objeto repite autor, texto y plazoAnios;
+        // Jackson no debe quedarse silenciosamente con "3er registro".
         String contenido = """
                 [
                   {
                     "autor": "Carlos",
+                    "texto": "Mensaje de prueba",
+                    "plazoAnios": 5
+                  },
+                  {
+                    "autor": "Carlos",
                     "texto": "Otro Mensaje",
                     "plazoAnios": 5,
-                    "texto": "3er registro"
+                    "autor": "Carlos",
+                    "texto": "3er registro",
+                    "plazoAnios": 5
                   }
                 ]
                 """;
