@@ -161,4 +161,45 @@ class R06RecuperacionTest {
         assertEquals(1, service.listar().size());
     }
 
+    @Test
+    void jsonCorruptoConBakValidoNoCargaRespaldoAutomaticamente() throws Exception {
+        Path archivo = carpetaTemporal.resolve("mensajes.json");
+        Path respaldo = carpetaTemporal.resolve("mensajes.json.bak");
+
+        // Simula la situación descrita: JSON dañado y .bak legible.
+        Files.writeString(archivo, "{json roto");
+        new JsonMensajeDao(respaldo).guardar(
+                List.of(new MensajeFuturo("Carlos", "Desde respaldo", 5))
+        );
+
+        IOException error = assertThrows(IOException.class,
+                () -> new MensajeService(new JsonMensajeDao(archivo)));
+
+        assertTrue(error.getMessage().contains("está dañado"));
+        assertEquals("{json roto", Files.readString(archivo));
+        assertEquals(1, new JsonMensajeDao(respaldo).listar().size());
+
+        // El código NO selecciona el .bak como fallback.
+        try (Stream<Path> entradas = Files.list(carpetaTemporal)) {
+            assertEquals(1, entradas.filter(p ->
+                    p.getFileName().toString().startsWith("mensajes.json.corrupt-")
+            ).count());
+        }
+    }
+
+    @Test
+    void jsonConListaVaciaDevuelveListaVaciaAunqueHayaRespaldo() throws Exception {
+        Path archivo = carpetaTemporal.resolve("mensajes.json");
+        Path respaldo = carpetaTemporal.resolve("mensajes.json.bak");
+        Files.writeString(archivo, "[]");
+        new JsonMensajeDao(respaldo).guardar(
+                List.of(new MensajeFuturo("Carlos", "Solo en respaldo", 5))
+        );
+
+        List<MensajeFuturo> recuperados = new JsonMensajeDao(archivo).listar();
+
+        assertTrue(recuperados.isEmpty());
+        assertEquals(1, new JsonMensajeDao(respaldo).listar().size());
+    }
+
 }
